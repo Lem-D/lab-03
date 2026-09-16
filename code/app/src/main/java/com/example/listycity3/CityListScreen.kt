@@ -25,16 +25,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.clickable
 
 @Composable
 fun CityListScreen(
     cities: List<City>,
     onAddCity: (City) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onUpdatedCity: (oldCity: City, updatedCity: City) -> Unit = { _, _ -> }
 ) {
     var newCityName by remember { mutableStateOf("") }
     var newProvinceName by remember { mutableStateOf("") }
     var showAddCityFields by remember { mutableStateOf(false) }
+    var selectedCity by remember { mutableStateOf<City?>(null) }
 
     Column(modifier = modifier.fillMaxSize()) {
         Row(
@@ -91,11 +94,57 @@ fun CityListScreen(
                     Text("Add City")
                 }
             }
+        } else if (selectedCity != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ){
+                OutlinedTextField(
+                    value = newCityName,
+                    onValueChange = { newCityName = it },
+                    label = { Text("Updated City") },
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                OutlinedTextField(
+                    value = newProvinceName,
+                    onValueChange = { newProvinceName = it },
+                    label = { Text("Updated Province") },
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Button(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    onClick = {
+                        if (newCityName.isNotBlank() && newProvinceName.isNotBlank()) {
+                            onUpdatedCity(
+                                selectedCity!!,
+                                City(
+                                    name = newCityName,
+                                    province = newProvinceName
+                                )
+                            )
+                            newCityName = ""
+                            newProvinceName = ""
+                            selectedCity = null
+                        }
+                    }
+                ) {
+                    Text("Update City")
+                }
+            }
         }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             itemsIndexed(cities) { index, city ->
-                CityRow(city = city)
-
+                CityRow(
+                    city = city,
+                    isSelected = city == selectedCity,
+                    onClick = {
+                        selectedCity = if (selectedCity == city) null else city
+                    }
+                )
                 if (index < cities.lastIndex) {
                     HorizontalDivider()
                 }
@@ -105,10 +154,17 @@ fun CityListScreen(
 }
 
 @Composable
-fun CityRow(city: City) {
+fun CityRow(
+    city: City,
+    isSelected: Boolean = false,
+    selectedCity: City? = null,
+    onClick: () -> Unit = {}
+) {
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onClick() }
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         Text(
